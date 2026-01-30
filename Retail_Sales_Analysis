@@ -1,0 +1,239 @@
+# Retail Sales SQL Analysis Project
+
+## 📌 Project Overview
+This project performs end-to-end analysis on a 10,000-record retail sales SQL database to derive business insights related to sales performance, profitability, customer behavior, and operations.
+
+## 🧠 Business Objectives
+- Analyze sales trends and growth
+- Identify high-performing products and regions
+- Evaluate profitability and margins
+- Segment customers and order behavior
+- Support data-driven business decisions
+
+## 🛠️ Tools Used
+- SQL (MySQL 8.0)
+- Power BI (for visualization)
+- GitHub (project versioning)
+
+## 📊 Key Analyses
+- Sales & profit trends
+- Month-over-month growth
+- Product and category performance
+- Regional contribution
+- Customer segmentation
+- Order priority and operational insights
+- Pareto (80/20) analysis
+- Rolling averages using window functions
+
+## 📈 Outcome
+Delivered actionable insights to optimize inventory planning, pricing strategies, and regional focus.
+
+## 📎 Author
+Jaya Nagarjun
+
+
+
+CREATE TABLE retail_sales (
+    order_id INT PRIMARY KEY,
+    order_date DATE,
+    customer_id INT,
+    customer_segment VARCHAR(50),
+    region VARCHAR(50),
+    product_id INT,
+    product_name VARCHAR(100),
+    category VARCHAR(50),
+    sales DECIMAL(10,2),
+    quantity INT,
+    profit DECIMAL(10,2),
+    order_priority VARCHAR(20)
+);
+
+
+
+📊 1️⃣ Overall Sales & Profit Performance
+
+SELECT
+    COUNT(DISTINCT order_id) AS total_orders,
+    ROUND(SUM(sales), 2) AS total_sales,
+    ROUND(SUM(profit), 2) AS total_profit
+FROM retail_sales;
+
+
+📈 2️⃣ Monthly Sales Trend
+
+SELECT
+    DATE_FORMAT(order_date, '%Y-%m') AS month,
+    ROUND(SUM(sales), 2) AS monthly_sales
+FROM retail_sales
+GROUP BY month
+ORDER BY month;
+
+
+📊 3️⃣ Month-over-Month (MoM) Growth 🔥
+
+WITH monthly_sales AS (
+SELECT
+DATE_FORMAT(order_date, '%Y-%m') AS month,
+        SUM(sales) AS sales
+FROM retail_sales
+GROUP BY month
+)
+SELECT
+    month,
+    sales,
+    LAG(sales) OVER (ORDER BY month) AS previous_month_sales,
+    ROUND(
+        (sales - LAG(sales) OVER (ORDER BY month)) /
+        LAG(sales) OVER (ORDER BY month) * 100, 2
+    ) AS mom_growth_pct
+FROM monthly_sales;
+
+
+💰 4️⃣ Profitability & Margin Analysis
+            SELECT
+    category,
+    ROUND(SUM(sales), 2) AS total_sales,
+    ROUND(SUM(profit), 2) AS total_profit,
+    ROUND(SUM(profit)/SUM(sales)*100, 2) AS profit_margin_pct
+FROM retail_sales
+GROUP BY category;
+
+
+🛒 5️⃣ Top 10 Products by Sales
+
+SELECT
+    product_name,
+    ROUND(SUM(sales), 2) AS total_sales
+FROM retail_sales
+GROUP BY product_name
+ORDER BY total_sales DESC
+LIMIT 10;
+
+
+
+📉 6️⃣ Bottom 10 Products by Profit
+            SELECT
+    product_name,
+    ROUND(SUM(profit), 2) AS total_profit
+FROM retail_sales
+GROUP BY product_name
+ORDER BY total_profit ASC
+LIMIT 10;
+
+
+🌍 7️⃣ Region-wise Sales & Profit
+            SELECT
+    region,
+    ROUND(SUM(sales), 2) AS total_sales,
+    ROUND(SUM(profit), 2) AS total_profit
+FROM retail_sales
+GROUP BY region
+ORDER BY total_sales DESC;
+
+
+
+👥 8️⃣ Customer Segment Contribution
+  SELECT
+    customer_segment,
+    COUNT(order_id) AS total_orders,
+    ROUND(SUM(sales), 2) AS total_sales
+FROM retail_sales
+GROUP BY customer_segment;
+
+
+🔁 9️⃣ Repeat vs New Customers
+            SELECT
+    customer_id,
+    COUNT(DISTINCT order_id) AS order_count
+FROM retail_sales
+GROUP BY customer_id
+HAVING order_count > 1;
+
+#counting the repeated customer
+
+            SELECT COUNT(*) AS repeat_customers
+FROM (
+    SELECT customer_id
+    FROM retail_sales
+    GROUP BY customer_id
+    HAVING COUNT(order_id) > 1
+) t;
+
+
+⚙️ 🔟 Order Priority Analysis (Operations 🔥)
+            SELECT
+    order_priority,
+    COUNT(order_id) AS order_count,
+    ROUND(SUM(sales), 2) AS total_sales
+FROM retail_sales
+GROUP BY order_priority
+ORDER BY order_count DESC;
+
+
+  📦 1️⃣1️⃣ Inventory & Demand Analysis
+
+            SELECT
+    product_name,
+    SUM(quantity) AS total_quantity_sold
+FROM retail_sales
+GROUP BY product_name
+ORDER BY total_quantity_sold DESC;
+
+
+🧮 1️⃣2️⃣ Average Order Value (AOV)
+
+            SELECT
+    ROUND(SUM(sales) / COUNT(DISTINCT order_id), 2) AS avg_order_value
+FROM retail_sales;
+
+
+🧠 1️⃣3️⃣ Pareto (80/20) Product Contribution 🔥
+
+            WITH product_sales AS (
+    SELECT
+        product_name,
+        SUM(sales) AS sales
+    FROM retail_sales
+    GROUP BY product_name
+),
+running_total AS (
+    SELECT
+        product_name,
+        sales,
+        SUM(sales) OVER (ORDER BY sales DESC) AS cumulative_sales,
+        SUM(sales) OVER () AS total_sales
+    FROM product_sales
+)
+SELECT
+    product_name,
+    sales,
+    ROUND(cumulative_sales / total_sales * 100, 2) AS cumulative_pct
+FROM running_total;
+
+
+
+ ⏱️ 1️⃣4️⃣ Rolling 3-Month Sales Average
+
+            WITH monthly_sales AS (
+    SELECT
+        DATE_FORMAT(order_date, '%Y-%m') AS month,
+        SUM(sales) AS sales
+    FROM retail_sales
+    GROUP BY month
+)
+SELECT
+    month,
+    sales,
+    ROUND(AVG(sales) OVER (ORDER BY month ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 2)
+    AS rolling_3_month_avg
+FROM monthly_sales;
+
+
+🚨 1️⃣5️⃣ Outlier Detection (Low Margin Products)
+
+            SELECT
+    product_name,
+    ROUND(SUM(profit)/SUM(sales)*100, 2) AS profit_margin_pct
+FROM retail_sales
+GROUP BY product_name
+HAVING profit_margin_pct < 5;
