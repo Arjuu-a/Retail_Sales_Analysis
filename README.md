@@ -1,10 +1,7 @@
 # 🛒 Retail Sales SQL Analysis Project
 
-![SQL](https://img.shields.io/badge/SQL-MySQL%208.0-blue)
-![Power BI](https://img.shields.io/badge/PowerBI-Visualization-yellow)
-![Status](https://img.shields.io/badge/Project-Complete-success)
-![Dataset](https://img.shields.io/badge/Records-10,000-informational)
-
+SQL
+Power BI
 ---
 
 ## 📌 Project Overview
